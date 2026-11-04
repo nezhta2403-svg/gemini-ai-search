@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ИИ-поиск</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--text:#1d1d1f;--muted:#6b6b70;--accent:#4f46e5;--border:#e3e3e0}
+@media (prefers-color-scheme:dark){:root{--bg:#141416;--card:#1e1e22;--text:#ececf0;--muted:#9a9aa3;--accent:#8b85ff;--border:#33333a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:32px 16px 48px}
+h1{font-size:1.9rem;margin:0 0 6px;text-align:center}
+.sub{color:var(--muted);text-align:center;margin:0 0 24px}
+form{display:flex;gap:8px}
+input{flex:1;min-width:0;padding:14px 16px;font-size:1rem;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text)}
+input:focus{outline:2px solid var(--accent);border-color:transparent}
+button{padding:0 20px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-size:1rem;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin:16px 0}
+.q{color:var(--muted);font-size:.85rem;margin-bottom:8px}
+.a{white-space:pre-wrap;word-wrap:break-word}
+.src{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:.9rem}
+.src a{display:block;color:var(--accent);text-decoration:none;margin:4px 0;overflow-wrap:anywhere}
+.src a:hover{text-decoration:underline}
+.err{color:#d33}
+</style>
+</head>
+<body>
+<main>
+<h1>🔎 ИИ-поиск</h1>
+<p class="sub">Ответы на основе актуальных данных из интернета</p>
+<form id="f">
+<input id="q" placeholder="Задайте вопрос…" maxlength="500" autocomplete="off" required>
+<button id="b">Найти</button>
+</form>
+<div id="out"></div>
+</main>
+<script>
+const f = document.getElementById("f"), q = document.getElementById("q"),
+      b = document.getElementById("b"), out = document.getElementById("out");
+
+f.addEventListener("submit", async e => {
+  e.preventDefault();
+  const query = q.value.trim();
+  if (!query) return;
+  b.disabled = true;
+
+  const card = document.createElement("div"); card.className = "card";
+  const qe = document.createElement("div"); qe.className = "q"; qe.textContent = query;
+  const ae = document.createElement("div"); ae.className = "a"; ae.textContent = "Ищу в интернете…";
+  card.append(qe, ae); out.prepend(card);
+
+  try {
+    const res = await fetch("/api/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Ошибка сервера");
+
+    ae.textContent = data.answer;
+    if (data.sources && data.sources.length) {
+      const s = document.createElement("div"); s.className = "src";
+      s.append("Источники:");
+      data.sources.forEach(src => {
+        if (!/^https?:\/\//i.test(src.url)) return;   // только http(s)-ссылки
+        const a = document.createElement("a");
+        a.href = src.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+        a.textContent = src.title;
+        s.append(a);
+      });
+      card.append(s);
+    }
+  } catch (err) {
+    ae.className = "a err";
+    ae.textContent = err.message || "Не удалось получить ответ.";
+  } finally {
+    b.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
