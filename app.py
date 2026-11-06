@@ -7,7 +7,7 @@ from flask import Flask, jsonify, request, send_from_directory
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-MODEL = "gemini-3.8-flash"
+MODEL = "gemini-3.5-flash-lite"
 MAX_QUERY_LEN = 500
 RATE_LIMIT = 10
 RATE_WINDOW = 60
